@@ -27,4 +27,10 @@ public class HubSpotController {
             createContactDTO.getPhone()
         );
     }
+
+    @PostMapping("/webhook")
+    public ResponseEntity<Void> receberWebhook(@RequestBody String payload) {
+        System.out.println("📩 Webhook recebido: " + payload);
+        return ResponseEntity.ok().build();
+    }
 }

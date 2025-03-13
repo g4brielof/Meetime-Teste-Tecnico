@@ -49,7 +49,7 @@ public class AuthorizationController {
         String REDIRECT_URL = AUTH_URL + 
                                 "?client_id=" + CLIENT_ID +
                                 "&redirect_uri=" + REDIRECT_URI +
-                                "&scope=crm.objects.contacts.write" +
+                                "&scope=crm.objects.contacts.write%20crm.objects.contacts.read" +
                                 "&response_type=code";
 
         return new RedirectView(REDIRECT_URL);
