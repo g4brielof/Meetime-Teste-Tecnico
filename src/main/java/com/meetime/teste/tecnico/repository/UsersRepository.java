@@ -8,4 +8,5 @@ import com.meetime.teste.tecnico.model.Users;
 
 @Repository
 public interface UsersRepository extends JpaRepository<Users, String> {
+    Optional<Users> findTopByClientIdOrderByExpiresAtDesc(String clientId);
 }

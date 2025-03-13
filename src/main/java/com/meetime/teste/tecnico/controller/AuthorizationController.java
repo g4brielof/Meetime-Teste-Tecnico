@@ -49,14 +49,14 @@ public class AuthorizationController {
         String REDIRECT_URL = AUTH_URL + 
                                 "?client_id=" + CLIENT_ID +
                                 "&redirect_uri=" + REDIRECT_URI +
-                                "&scope=crm.schemas.contacts.read" +
+                                "&scope=crm.objects.contacts.write" +
                                 "&response_type=code";
 
         return new RedirectView(REDIRECT_URL);
     }
 
     @GetMapping("/callback")
-    public ResponseEntity<String> callback(@RequestParam("code") String authorizationCode) throws Exception {
+    public void callback(@RequestParam("code") String authorizationCode) throws Exception {
         RestTemplate restTemplate = new RestTemplate();
 
         MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
@@ -89,6 +89,6 @@ public class AuthorizationController {
             usersRepository.save(user);
         }
 
-        return ResponseEntity.ok("Response do HubSpot: " + response.getBody());
+        //return ResponseEntity.ok("Response do HubSpot: " + response.getBody());
     }
 }
