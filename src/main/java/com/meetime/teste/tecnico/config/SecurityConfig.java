@@ -9,12 +9,11 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
-                .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
-                )
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**")) // Desativa CSRF para o H2 Console
-                .headers(headers -> headers.frameOptions().disable()) // Permite uso de iframes (necessário para o console H2)
-                .build();
+        http
+        .csrf(csrf -> csrf.disable())  // Desativa CSRF para testes locais
+        .authorizeHttpRequests(auth -> auth
+            .anyRequest().permitAll()
+        );
+        return http.build();
     }
 }
