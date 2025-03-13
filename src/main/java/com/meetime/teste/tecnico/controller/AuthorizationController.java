@@ -1,8 +1,8 @@
 package com.meetime.teste.tecnico.controller;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.time.LocalDateTime;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -18,6 +18,10 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.view.RedirectView;
 
 import com.meetime.teste.tecnico.config.AuthorizationConfig;
+import com.meetime.teste.tecnico.mapper.UserMapper;
+import com.meetime.teste.tecnico.mapper.dto.UserDTO;
+import com.meetime.teste.tecnico.model.Users;
+import com.meetime.teste.tecnico.repository.UsersRepository;
 
 @RestController
 @RequestMapping("/api/oauth")
@@ -29,7 +33,11 @@ public class AuthorizationController {
     private final String REDIRECT_URI;
     private final String TOKEN_URL = "https://api.hubapi.com/oauth/v1/token";
 
-    public AuthorizationController(AuthorizationConfig authorizationConfig) {
+    @Autowired
+    private final UsersRepository usersRepository;
+
+    public AuthorizationController(AuthorizationConfig authorizationConfig, UsersRepository usersRepository) {
+        this.usersRepository = usersRepository;
         this.AUTH_URL = authorizationConfig.getAuthUrl();
         this.CLIENT_ID = authorizationConfig.getClientId();
         this.CLIENT_SECRET = authorizationConfig.getClientSecret();
@@ -48,7 +56,7 @@ public class AuthorizationController {
     }
 
     @GetMapping("/callback")
-    public ResponseEntity<String> callback(@RequestParam("code") String authorizationCode) {
+    public ResponseEntity<String> callback(@RequestParam("code") String authorizationCode) throws Exception {
         RestTemplate restTemplate = new RestTemplate();
 
         MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
@@ -69,6 +77,17 @@ public class AuthorizationController {
                 requestEntity,
                 String.class
         );
+
+        if (response.getBody() != null) {
+            UserDTO responseBody = UserMapper.converterJsonParaObjeto(response.getBody());
+            String accessToken = responseBody.getAccessToken();
+            String refreshToken = responseBody.getRefreshToken();
+            Integer expiresIn = responseBody.getExpiresIn();
+            LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(expiresIn);
+
+            Users user = new Users(CLIENT_ID, accessToken, refreshToken, expiresAt);
+            usersRepository.save(user);
+        }
 
         return ResponseEntity.ok("Response do HubSpot: " + response.getBody());
     }
