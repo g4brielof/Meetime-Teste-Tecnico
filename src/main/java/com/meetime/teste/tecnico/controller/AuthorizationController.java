@@ -1,6 +1,7 @@
 package com.meetime.teste.tecnico.controller;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -90,5 +91,39 @@ public class AuthorizationController {
         }
 
         //return ResponseEntity.ok("Response do HubSpot: " + response.getBody());
+    }
+
+    public String refreshAccessToken(String refreshToken) throws Exception {
+        RestTemplate restTemplate = new RestTemplate();
+
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("grant_type", "refresh_token");
+        body.add("client_id", CLIENT_ID);
+        body.add("client_secret", CLIENT_SECRET);
+        body.add("refresh_token", refreshToken);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(TOKEN_URL, HttpMethod.POST, request, String.class);
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            UserDTO responseBody = UserMapper.converterJsonParaObjeto(response.getBody());
+            String newAccessToken = responseBody.getAccessToken();
+            String newRefreshToken = responseBody.getRefreshToken();
+
+            // Atualiza o banco de dados
+            Optional<Users> token = usersRepository.findTopByClientIdOrderByExpiresAtDesc(CLIENT_ID);
+            Users userToken = token.get();
+            userToken.setAccessToken(newAccessToken);
+            userToken.setRefreshToken(newRefreshToken);
+            usersRepository.save(userToken);
+
+            return newAccessToken;
+        } else {
+            throw new RuntimeException("Erro ao renovar o token");
+        }
     }
 }
