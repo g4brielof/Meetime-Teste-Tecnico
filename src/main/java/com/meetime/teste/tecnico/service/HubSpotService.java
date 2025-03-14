@@ -13,7 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.meetime.teste.tecnico.config.AuthorizationConfig;
+import com.meetime.teste.tecnico.mapper.ContactEventsMapper;
+import com.meetime.teste.tecnico.mapper.dto.ContactEventsDTO;
+import com.meetime.teste.tecnico.model.ContactEvents;
 import com.meetime.teste.tecnico.model.Users;
+import com.meetime.teste.tecnico.repository.ContactEventsRepository;
 import com.meetime.teste.tecnico.repository.UsersRepository;
 
 @Service
@@ -23,11 +27,13 @@ public class HubSpotService {
     private final String HUBSPOT_CREATE_CONTACT_URL = "https://api.hubapi.com/crm/v3/objects/contacts";
 
     private final UsersRepository usersRepository;
+    private final ContactEventsRepository contactEventsRepository;
     private final AuthorizationConfig authorizationConfig;
 
-    public HubSpotService(AuthorizationConfig authorizationConfig, UsersRepository usersRepository) {
+    public HubSpotService(AuthorizationConfig authorizationConfig, UsersRepository usersRepository, ContactEventsRepository contactEventsRepository) {
         this.authorizationConfig = authorizationConfig;
         this.usersRepository = usersRepository;
+        this.contactEventsRepository = contactEventsRepository;
         this.restTemplate = new RestTemplate();
     }
 
@@ -61,5 +67,26 @@ public class HubSpotService {
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
         return restTemplate.exchange(HUBSPOT_CREATE_CONTACT_URL, HttpMethod.POST, entity, String.class);
+    }
+
+    public void processWebHookEvents(String payload) throws Exception {
+        ContactEvents contactEvents = new ContactEvents();
+        ContactEventsDTO contactEventPayload = ContactEventsMapper.contactEventsConverter(payload);
+        
+        contactEvents.setEventId(contactEventPayload.getEventId());
+        contactEvents.setSubscriptionId(contactEventPayload.getSubscriptionId());
+        contactEvents.setPortalId(contactEventPayload.getPortalId());
+        contactEvents.setAppId(contactEventPayload.getAppId());
+        contactEvents.setOccurredAt(contactEventPayload.getOccurredAt());
+        contactEvents.setSubscriptionType(contactEventPayload.getSubscriptionType());
+        contactEvents.setAttemptNumber(contactEventPayload.getAttemptNumber());
+        contactEvents.setObjectId(contactEventPayload.getObjectId());
+        contactEvents.setChangeFlag(contactEventPayload.getChangeFlag());
+        contactEvents.setChangeSource(contactEventPayload.getChangeSource());
+        contactEvents.setSourceId(contactEventPayload.getSourceId());
+
+        System.out.println(contactEvents.toString());
+
+        contactEventsRepository.save(contactEvents);
     }
 }

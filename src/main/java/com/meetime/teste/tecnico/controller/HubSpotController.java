@@ -29,8 +29,8 @@ public class HubSpotController {
     }
 
     @PostMapping("/webhook")
-    public ResponseEntity<Void> receberWebhook(@RequestBody String payload) {
-        System.out.println("📩 Webhook recebido: " + payload);
-        return ResponseEntity.ok().build();
+    public void receberWebhook(@RequestBody String payload) throws Exception {
+        System.out.println("Webhook recebido: " + payload);
+        hubSpotService.processWebHookEvents(payload);
     }
 }
