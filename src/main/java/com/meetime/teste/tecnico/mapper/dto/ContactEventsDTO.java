@@ -1,7 +1,5 @@
 package com.meetime.teste.tecnico.mapper.dto;
 
-import java.math.BigInteger;
-
 import lombok.Data;
 
 @Data

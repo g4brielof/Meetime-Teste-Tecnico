@@ -11,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.view.RedirectView;
 
@@ -40,9 +39,12 @@ public class AuthorizationService {
     }
 
     public RedirectView authorize() {
+        System.out.println("STARTING REDIRECT!");
         String REDIRECT_URL = AUTH_URL + 
-                                "?client_id=" + CLIENT_ID +
-                                "&redirect_uri=" + REDIRECT_URI +
+                                "?client_id=" + 
+                                CLIENT_ID +
+                                "&redirect_uri=" + 
+                                REDIRECT_URI +
                                 "&scope=crm.objects.contacts.write%20crm.objects.contacts.read" +
                                 "&response_type=code";
 
@@ -50,29 +52,21 @@ public class AuthorizationService {
     }
 
     public void callback(String authorizationCode) throws Exception {
-        RestTemplate restTemplate = new RestTemplate();
-
+        System.out.println("AUTHORIZATION TOKEN RECEIVED!");
         MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
+
         requestBody.add("grant_type", "authorization_code");
         requestBody.add("client_id", CLIENT_ID);
         requestBody.add("client_secret", CLIENT_SECRET);
         requestBody.add("redirect_uri", REDIRECT_URI);
         requestBody.add("code", authorizationCode);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        ResponseEntity<String> response = requestToken(requestBody);
 
-        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            System.out.println("ACCESS TOKEN RECEIVED!");
+            UserDTO responseBody = UserMapper.usersConverter(response.getBody());
 
-        ResponseEntity<String> response = restTemplate.exchange(
-                TOKEN_URL,
-                HttpMethod.POST,
-                requestEntity,
-                String.class
-        );
-
-        if (response.getBody() != null) {
-            UserDTO responseBody = UserMapper.converterJsonParaObjeto(response.getBody());
             String accessToken = responseBody.getAccessToken();
             String refreshToken = responseBody.getRefreshToken();
             Integer expiresIn = responseBody.getExpiresIn();
@@ -86,36 +80,48 @@ public class AuthorizationService {
     }
 
     public String refreshAccessToken(String refreshToken) throws Exception {
-        RestTemplate restTemplate = new RestTemplate();
-
+        System.out.println("TRYING TO GET A NEW TOKEN!");
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+
         body.add("grant_type", "refresh_token");
         body.add("client_id", CLIENT_ID);
         body.add("client_secret", CLIENT_SECRET);
         body.add("refresh_token", refreshToken);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
-
-        ResponseEntity<String> response = restTemplate.exchange(TOKEN_URL, HttpMethod.POST, request, String.class);
+        ResponseEntity<String> response = requestToken(body);
 
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-            UserDTO responseBody = UserMapper.converterJsonParaObjeto(response.getBody());
+            UserDTO responseBody = UserMapper.usersConverter(response.getBody());
+
             String newAccessToken = responseBody.getAccessToken();
             String newRefreshToken = responseBody.getRefreshToken();
 
-            // Atualiza o banco de dados
             Optional<Users> token = usersRepository.findTopByClientIdOrderByExpiresAtDesc(CLIENT_ID);
             Users userToken = token.get();
             userToken.setAccessToken(newAccessToken);
             userToken.setRefreshToken(newRefreshToken);
+            
             usersRepository.save(userToken);
-
+            System.out.println("NEW ACCESS TOKEN RECEIVED!");
             return newAccessToken;
         } else {
             throw new RuntimeException("Erro ao renovar o token");
         }
+    }
+
+    private ResponseEntity<String> requestToken(MultiValueMap<String, String> requestBody) {
+        System.out.println("REQUESTING ACCESS TOKEN!");
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(requestBody, headers);
+
+        return restTemplate.exchange(
+            TOKEN_URL, 
+            HttpMethod.POST, 
+            request, 
+            String.class);
     }
 }

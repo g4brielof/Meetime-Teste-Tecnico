@@ -19,7 +19,7 @@ public class HubSpotController {
     }
 
     @PostMapping("/new-contact")
-    public ResponseEntity<String> createContact(@RequestBody CreateContactDTO createContactDTO) {
+    public ResponseEntity<String> createContact(@RequestBody CreateContactDTO createContactDTO) throws Exception {
         return hubSpotService.createContact(
             createContactDTO.getEmail(),
             createContactDTO.getFirstName(),
@@ -30,7 +30,7 @@ public class HubSpotController {
 
     @PostMapping("/webhook")
     public void receberWebhook(@RequestBody String payload) throws Exception {
-        System.out.println("Webhook recebido: " + payload);
+        System.out.println("EVENT RECEIVED FROM HUBSPOT WEBHOOK!");
         hubSpotService.processWebHookEvents(payload);
     }
 }
