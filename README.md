@@ -26,6 +26,7 @@ Este projeto consiste no desenvolvimento de uma API REST em Java 17/SpringBoot p
 - Crie uma conta de desenvolvedor
 #
 - Entre na área de Aplicativos
+
 ![alt text](imgs/image-4.png)
 #
 - Crie um novo aplicativo
@@ -44,9 +45,11 @@ Este projeto consiste no desenvolvimento de uma API REST em Java 17/SpringBoot p
 ![alt text](imgs/image-9.png)
 #
 - Crie o aplicativo
+
 ![alt text](imgs/image-10.png) 
 # 
 - Agora com aplicativo criado abra Testar contas
+
 ![alt text](imgs/image-11.png)
 #
 - Crie uma conta de teste de desenvolvedor
@@ -55,7 +58,8 @@ Este projeto consiste no desenvolvimento de uma API REST em Java 17/SpringBoot p
 Está finalizado o setup no HubSpot e no próximo tópico tera as configurações na API.
 ## Setup API
 #
-- Na aba de projetos em Autenticação copie os seguinte valor
+- Na aba de projetos em Autenticação copie os seguintes valores
+
 `ID do cliente`
 `Segredo do cliente`
 #
@@ -65,6 +69,7 @@ Está finalizado o setup no HubSpot e no próximo tópico tera as configuraçõe
 - Apos instalar todas as dependencias do pom podemos startar a API
 #
 - Apos API startar acesse o endpoint abaixo
+
 `http://localhost:8080/api/oauth/authorize`
 #
 - Selecione a conta de teste de desenvolvedor criada anteriormente
@@ -77,6 +82,7 @@ Está finalizado o setup no HubSpot e no próximo tópico tera as configuraçõe
 ![alt text](imgs/image-17.png)
 #
 - Para criar um novo contato utilize o curl abaixo
+
 `curl --location 'http://localhost:8080/api/hubspot/new-contact' \
 --header 'Content-Type: application/json' \
 --header 'Cookie: JSESSIONID=B41802F7100C06ABE854AA45FE006413' \
@@ -87,7 +93,8 @@ Está finalizado o setup no HubSpot e no próximo tópico tera as configuraçõe
            "phone": "+5511999999999"
          }'`
 #
-- Agora com usuario criado precisamos configurar o webhook, para isso vamos rodar criar uma url externa com ngrok
+- Agora com usuario criado precisamos configurar o webhook, para isso vamos rodar o comando abaixo para criar uma url externa com ngrok
+
 `ngrok http 8080`
 ![alt text](imgs/image-16.png)
 #
