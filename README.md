@@ -113,6 +113,9 @@ Está finalizado o setup no HubSpot e no próximo tópico tera as configuraçõe
 ![alt text](imgs/image-22.png)
 #
 - Está finzalidado, estamos fazendo o fluxo de autenticação e criação de um novo contato e recebendo eventos do webhook assinado para enviar o evento toda vez que for criado um novo contato.
-## Docs
 
 ## Futuras Melhorias
+- Implementar testes unitários
+- Mudar para um banco que não seja em memória
+- Melhorar os logs da aplicação
+- Adicionar mais recursos além da criação de contatos
