@@ -1,5 +1,8 @@
 package com.meetime.teste.tecnico.controller;
 
+import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -25,7 +28,7 @@ public class AuthorizationController {
     }
 
     @GetMapping("/callback")
-    public void callback(@RequestParam("code") String authorizationCode) throws Exception {
-        authorizationService.callback(authorizationCode);
+    public ResponseEntity<Map<String, Object>> callback(@RequestParam("code") String authorizationCode) throws Exception {
+        return authorizationService.callback(authorizationCode);
     }
 }

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.meetime.teste.tecnico.config.AuthorizationConfig;
+import com.meetime.teste.tecnico.exception.UserWithValidClientIdNotFoundException;
 import com.meetime.teste.tecnico.mapper.ContactEventsMapper;
 import com.meetime.teste.tecnico.mapper.dto.ContactEventsDTO;
 import com.meetime.teste.tecnico.model.ContactEvents;
@@ -50,7 +51,7 @@ public class HubSpotService {
         Optional<Users> userToken = usersRepository.findTopByClientIdOrderByExpiresAtDesc(clientId);
 
         if (userToken.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token não encontrado para o Client ID: " + clientId);
+            throw new UserWithValidClientIdNotFoundException("INVALID USER!");
         }
 
         Users token = userToken.get();

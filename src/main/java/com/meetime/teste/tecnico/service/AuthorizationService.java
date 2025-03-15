@@ -1,11 +1,14 @@
 package com.meetime.teste.tecnico.service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -15,6 +18,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.view.RedirectView;
 
 import com.meetime.teste.tecnico.config.AuthorizationConfig;
+import com.meetime.teste.tecnico.exception.FailedToReceiveAccessTokenException;
+import com.meetime.teste.tecnico.exception.FailedToRefreshAccessTokenException;
 import com.meetime.teste.tecnico.mapper.UserMapper;
 import com.meetime.teste.tecnico.mapper.dto.UserDTO;
 import com.meetime.teste.tecnico.model.Users;
@@ -51,7 +56,7 @@ public class AuthorizationService {
         return new RedirectView(REDIRECT_URL);
     }
 
-    public void callback(String authorizationCode) throws Exception {
+    public ResponseEntity<Map<String, Object>> callback(String authorizationCode) throws Exception {
         System.out.println("AUTHORIZATION TOKEN RECEIVED!");
         MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
 
@@ -74,9 +79,12 @@ public class AuthorizationService {
 
             Users user = new Users(CLIENT_ID, accessToken, refreshToken, expiresAt);
             usersRepository.save(user);
-        }
 
-        //return ResponseEntity.ok("Response do HubSpot: " + response.getBody());
+            return buildResponse("ACCESS TOKEN RECEIVED!", HttpStatus.OK);
+        }
+        
+        System.out.println("FAILED TO RECEIVE ACCESS TOKEN!");
+        throw new FailedToReceiveAccessTokenException("FAILED TO RECEIVE ACCESS TOKEN!");
     }
 
     public String refreshAccessToken(String refreshToken) throws Exception {
@@ -104,9 +112,9 @@ public class AuthorizationService {
             usersRepository.save(userToken);
             System.out.println("NEW ACCESS TOKEN RECEIVED!");
             return newAccessToken;
-        } else {
-            throw new RuntimeException("Erro ao renovar o token");
         }
+
+        throw new FailedToRefreshAccessTokenException("FAILED TO REFRESH ACCESS TOKEN!");
     }
 
     private ResponseEntity<String> requestToken(MultiValueMap<String, String> requestBody) {
@@ -123,5 +131,14 @@ public class AuthorizationService {
             HttpMethod.POST, 
             request, 
             String.class);
+    }
+
+    private static <T> ResponseEntity<Map<String, Object>> buildResponse(String message, HttpStatus status) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", status.value());
+        response.put("message", message);
+
+        return new ResponseEntity<>(response, status);
     }
 }
