@@ -1,7 +1,5 @@
 package com.meetime.teste.tecnico.mapper.dto;
 
-import java.time.LocalDateTime;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;

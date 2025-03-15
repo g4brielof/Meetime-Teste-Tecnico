@@ -1,5 +1,6 @@
 package com.meetime.teste.tecnico.service;
 
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.meetime.teste.tecnico.config.AuthorizationConfig;
+import com.meetime.teste.tecnico.exception.UserWithValidClientIdNotFoundException;
 import com.meetime.teste.tecnico.mapper.ContactEventsMapper;
 import com.meetime.teste.tecnico.mapper.dto.ContactEventsDTO;
 import com.meetime.teste.tecnico.model.ContactEvents;
@@ -22,32 +24,34 @@ import com.meetime.teste.tecnico.repository.UsersRepository;
 
 @Service
 public class HubSpotService {
-    
-    private final RestTemplate restTemplate;
+    private final String TOKEN_URL = "https://api.hubapi.com/oauth/v1/token";
     private final String HUBSPOT_CREATE_CONTACT_URL = "https://api.hubapi.com/crm/v3/objects/contacts";
 
     private final UsersRepository usersRepository;
     private final ContactEventsRepository contactEventsRepository;
     private final AuthorizationConfig authorizationConfig;
+    private final AuthorizationService authorizationService;
 
-    public HubSpotService(AuthorizationConfig authorizationConfig, UsersRepository usersRepository, ContactEventsRepository contactEventsRepository) {
+    public HubSpotService(AuthorizationConfig authorizationConfig,
+                            UsersRepository usersRepository,
+                            ContactEventsRepository contactEventsRepository,
+                            AuthorizationService authorizationService) {
+
         this.authorizationConfig = authorizationConfig;
         this.usersRepository = usersRepository;
         this.contactEventsRepository = contactEventsRepository;
-        this.restTemplate = new RestTemplate();
+        this.authorizationService = authorizationService;
     }
 
-    public ResponseEntity<String> createContact(String email, String firstName, String lastName, String phone) {
+    public ResponseEntity<String> createContact(String email, String firstName, String lastName, String phone) throws Exception {
+        System.out.println("CREATING A NEW CONTACT!");
+        RestTemplate restTemplate = new RestTemplate();
         String clientId = authorizationConfig.getClientId();
-
-        if (clientId == null || clientId.isBlank()) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("CLIENT_ID não configurado nas variáveis de ambiente.");
-        }
 
         Optional<Users> userToken = usersRepository.findTopByClientIdOrderByExpiresAtDesc(clientId);
 
         if (userToken.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token não encontrado para o Client ID: " + clientId);
+            throw new UserWithValidClientIdNotFoundException("INVALID USER!");
         }
 
         Users token = userToken.get();
@@ -55,7 +59,6 @@ public class HubSpotService {
         headers.set("Authorization", "Bearer " + token.getAccessToken());
         headers.set("Content-Type", "application/json");
 
-        // Criando o corpo da requisição com os dados do contato
         Map<String, Object> properties = new HashMap<>();
         properties.put("email", email);
         properties.put("firstname", firstName);
@@ -65,8 +68,24 @@ public class HubSpotService {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("properties", properties);
 
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-        return restTemplate.exchange(HUBSPOT_CREATE_CONTACT_URL, HttpMethod.POST, entity, String.class);
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+        
+        ResponseEntity<String> response = restTemplate.exchange(
+            HUBSPOT_CREATE_CONTACT_URL,
+            HttpMethod.POST,
+            request,
+            String.class);
+        
+        if (response.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+            System.out.println("TOKEN EXPIRED!");
+            String novoToken = authorizationService.refreshAccessToken(token.getRefreshToken());
+            headers.setBearerAuth(novoToken);
+            request = new HttpEntity<>(headers);
+    
+            response = restTemplate.exchange(TOKEN_URL, HttpMethod.GET, request, String.class);
+        }
+        System.out.println("NEW CONTACT CREATED!");
+        return response;
     }
 
     public void processWebHookEvents(String payload) throws Exception {
@@ -84,9 +103,8 @@ public class HubSpotService {
         contactEvents.setChangeFlag(contactEventPayload.getChangeFlag());
         contactEvents.setChangeSource(contactEventPayload.getChangeSource());
         contactEvents.setSourceId(contactEventPayload.getSourceId());
-
-        System.out.println(contactEvents.toString());
-
+        
         contactEventsRepository.save(contactEvents);
+        System.out.println("NEW EVENT WITH ID " + contactEventPayload.getEventId() + " SAVED ON DATABASE!");
     }
 }
