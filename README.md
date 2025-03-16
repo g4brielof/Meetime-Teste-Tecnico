@@ -119,3 +119,4 @@ Está finalizado o setup no HubSpot e no próximo tópico tera as configuraçõe
 - Mudar para um banco que não seja em memória
 - Melhorar os logs da aplicação
 - Adicionar mais recursos além da criação de contatos
+- Alterar a forma que é passado o CLIENT_ID e CLIENT_SECRET
